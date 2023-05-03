@@ -1,0 +1,33 @@
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+.top_a {
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.navbar_a {
+    text-decoration: none;
+    color: #000000;
+    font-size: 14px;
+}
+
+.red-bg {
+    background: #A22135 !important;
+}
+
+#map {
+    width: 100%;
+    height: 600px;
+}
+
+.footer-area {
+    background-image: url(/images/footerbg.png);
+    margin-top: 2em;
+    padding: 2em 0px 0;
+    position: relative;
+}

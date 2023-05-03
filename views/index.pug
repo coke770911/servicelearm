@@ -1,0 +1,113 @@
+extends layout
+
+block content
+  div.container.mt-3
+    div.row
+      div.col
+        div.card
+          div.card-body
+            form.row(id="formdata",name="formdata",method="get")
+              div.col-lg-3.col-md-12.mb-2
+                label.form-label(for="smtr") 學年度
+                select.form-select(aria-label="smtr",id="smtr",name="smtr",onchange="search_data()")
+                  option(value="all") 全部
+              div.col-lg-3.col-md-12.mb-2
+                label.form-label(for="sdgs") SDGs目標
+                select.form-select(aria-label="sdgs",id="sdgs",name="sdgs",onchange="search_data()")
+                  option(value="all") 全部
+              div.col-lg-3.col-md-12.mb-2
+              div.col-lg-3.col-md-12.mb-2
+                label.form-label(for="") 服務機構
+                div.input-group
+                  input.form-control(type="text",id="txtname",name="txtname")
+                  div.input-group-append
+                    button.btn.btn-outline-secondary(type="button",onclick="search_data()")
+                      i.bi.bi-search
+  div.container
+    div#map
+  script(src="/javascripts/source.js")
+  script(src="https://maps.googleapis.com/maps/api/js?key="+mapkey+"&callback=initMap",async)
+  script(type='text/javascript').
+    let map;   
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 14,
+        center: new google.maps.LatLng(24.996, 121.453),
+        mapTypeId: "roadmap",
+        clickableIcons: false,
+        mapTypeControl: false,
+      });
+    }
+
+    axios.get('/smtr')
+    .then( response => {
+      let $smtr = document.getElementById('smtr');    
+      (response.data.data).forEach( element => {
+        var opt = document.createElement('option');
+        opt.value = element.sl_smtr;
+        opt.innerHTML = element.sl_smtr;
+        $smtr.appendChild(opt);
+      });
+    });
+
+    axios.get('/sdgs')
+    .then( response => {
+      let $sdgs = document.getElementById('sdgs');
+      (response.data.data).forEach( element => {
+        var opt = document.createElement('option');
+        opt.value = element.cd_name;
+        opt.innerHTML = element.cd_name;
+        $sdgs.appendChild(opt);
+      });
+    });
+    
+    var search_data = function() {
+      axios.get('/cos_data' , {
+        params: {
+          smtr: document.getElementById('smtr').value,
+          sdgs: document.getElementById('sdgs').value,
+          txtname: document.getElementById('txtname').value,
+        }
+      }).then( response => {
+        if(response.data.data.length > 0) {
+          map_marker(response.data.data);
+        } else {
+          initMap();
+          swal({title: '搜尋不到資料。',icon: "warning",button: "確定"})
+        }
+      });
+    }
+    search_data();
+
+    let map_marker = function(markdata) {
+        initMap()
+        let bounds = new google.maps.LatLngBounds(); //抓取縮放 範圍
+        let prev_infowindow = false; 
+
+        markdata.forEach((feature) => {
+            let latlng = feature.sl_position.split(/, ?/)
+            feature.sl_position = new google.maps.LatLng(parseFloat(latlng[0]), parseFloat(latlng[1]));
+            let marker = new google.maps.Marker({
+              position: feature.sl_position,
+              map: map,
+              title: feature.sl_name,
+              label: {color: '#000', fontSize: '12px', fontWeight: '600',text: '1'}
+            });
+            
+            let infowindow = new google.maps.InfoWindow({
+                content: `<br><div><h6>服務地點：${feature.sl_name}</h6></div><div><h6>課程名稱：${feature.sl_cos_name}</h6></div><div><h6>SDGs：${feature.sl_SDGs_Item}</h6></div>` // 支援html
+            });
+            
+            marker.addListener('mouseover', e => {
+              if(prev_infowindow) {
+                prev_infowindow.close();
+              }
+              prev_infowindow = infowindow;
+              infowindow.open(this.map, marker);
+            });
+            bounds.extend(feature.sl_position); //逐步寫入座標點
+        });
+        map.fitBounds(bounds); //重新繪製範圍
+    }
+
+    
